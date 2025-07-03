@@ -190,7 +190,7 @@ function CustomerPage() {
         <h1 style={{ fontWeight: 800, color: '#1a237e', marginBottom: 24, textShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
           Environmental Monitoring Dashboard
         </h1>
-        <div className="panels-row">
+        <div className="panels-row" style={{ visibility: selected ? 'hidden' : 'visible', height: selected ? 0 : undefined }}>
           <div style={{ flex: 1, minWidth: 320, maxWidth: 420 }}>
             <AirQualityPanel selected={selected === 'air'} onClick={() => setSelected('air')} data={airData} loading={airLoading} />
           </div>

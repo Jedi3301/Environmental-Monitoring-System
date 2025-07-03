@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import Papa from 'papaparse';
 
@@ -13,18 +13,19 @@ function EditableTable({ tableName, columns, canEdit }) {
   const [csvError, setCsvError] = useState(null);
   const [csvSuccess, setCsvSuccess] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [tableName, fetchData]);
-
-  const fetchData = async () => {
+  // Wrap fetchData in useCallback for stable identity
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     const { data, error } = await supabase.from(tableName).select('*').order('forecast_time', { ascending: false });
     if (error) setError('Failed to fetch data.');
     setData(data || []);
     setLoading(false);
-  };
+  }, [tableName]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const startEdit = idx => {
     setEditIdx(idx);
