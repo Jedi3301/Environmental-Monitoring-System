@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -13,6 +16,7 @@ function LoginPage() {
   const [signupMsg, setSignupMsg] = useState('');
   const [role, setRole] = useState(null); // 'admin' or 'master_admin'
   const [section, setSection] = useState(null);
+  const [firstNameDisplay, setFirstNameDisplay] = useState('');
 
   const navigate = useNavigate();
 
@@ -23,6 +27,7 @@ function LoginPage() {
     setSuccess(false);
     setRole(null);
     setSection(null);
+    setFirstNameDisplay('');
     // Sign in
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
     if (loginError) {
@@ -36,6 +41,15 @@ function LoginPage() {
       setLoading(false);
       setError('User not found after login.');
       return;
+    }
+    // Fetch first name from profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('first_name')
+      .eq('id', user.id)
+      .single();
+    if (!profileError && profile && profile.first_name) {
+      setFirstNameDisplay(profile.first_name);
     }
     // Check admin_roles
     const { data: roleData, error: roleError } = await supabase
@@ -59,13 +73,37 @@ function LoginPage() {
     setLoading(true);
     setError(null);
     setSignupMsg('');
-    const { error } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      setSignupMsg('Signup successful! Please check your email to confirm your account.');
+    if (password !== confirmPassword) {
+      setLoading(false);
+      setError('Passwords do not match.');
+      return;
     }
+    if (!firstName || !lastName) {
+      setLoading(false);
+      setError('Please enter your first and last name.');
+      return;
+    }
+    // Sign up user
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    if (signUpError) {
+      setLoading(false);
+      setError(signUpError.message);
+      return;
+    }
+    // Insert profile
+    const userId = data?.user?.id || data?.user?.id;
+    if (userId) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{ id: userId, first_name: firstName, last_name: lastName }]);
+      if (profileError) {
+        setLoading(false);
+        setError('Signup succeeded but failed to save profile info.');
+        return;
+      }
+    }
+    setLoading(false);
+    setSignupMsg('Signup successful! Please check your email to confirm your account.');
   };
 
   return (
@@ -78,7 +116,7 @@ function LoginPage() {
         <div className="card-main-title">Environmental Monitoring System</div>
         {role ? (
           <div style={{textAlign: 'center', marginTop: 32}}>
-            <h2>Welcome, {role === 'master_admin' ? 'Master Admin' : 'Admin'}!</h2>
+            <h2>Welcome, {firstNameDisplay ? firstNameDisplay : (role === 'master_admin' ? 'Master Admin' : 'Admin')}!</h2>
             <p>Your section: {role === 'master_admin' ? 'All' : section}</p>
             <p>(Admin dashboard UI goes here)</p>
           </div>
@@ -86,6 +124,30 @@ function LoginPage() {
         <>
         <h2 className="login-title">{mode === 'login' ? 'Sign In' : 'Sign Up'}</h2>
         <form onSubmit={mode === 'login' ? handleLogin : handleSignup}>
+          {mode === 'signup' && (
+            <>
+              <div className="login-field">
+                <label className="login-label">First Name</label>
+                <input
+                  className="login-input"
+                  type="text"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="login-field">
+                <label className="login-label">Last Name</label>
+                <input
+                  className="login-input"
+                  type="text"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  required
+                />
+              </div>
+            </>
+          )}
           <div className="login-field">
             <label className="login-label">Email</label>
             <input
@@ -106,6 +168,18 @@ function LoginPage() {
               required
             />
           </div>
+          {mode === 'signup' && (
+            <div className="login-field">
+              <label className="login-label">Confirm Password</label>
+              <input
+                className="login-input"
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+          )}
           <button
             className="login-btn"
             type="submit"
