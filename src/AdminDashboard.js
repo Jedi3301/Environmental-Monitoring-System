@@ -79,7 +79,7 @@ function AdminDashboard() {
             <h3>Water Quality Data</h3>
             <EditableTable
               tableName="water_quality"
-              columns={["id", "ph", "turbidity", "dissolved_oxy", "recorded_at"]}
+              columns={["id", "ph", "turbidity", "dissolved_oxygen", "recorded_at"]}
               canEdit={canEdit('water_quality')}
             />
           </div>

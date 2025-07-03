@@ -15,8 +15,7 @@ function EditableTable({ tableName, columns, canEdit }) {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line
-  }, [tableName]);
+  }, [tableName, fetchData]);
 
   const fetchData = async () => {
     setLoading(true);
